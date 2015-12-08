@@ -1,1 +1,1 @@
-web: ./htm-over-http/run
+web: ./run
