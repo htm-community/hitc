@@ -15,12 +15,24 @@ def reset(request):
     model.resetSequenceStates()
     return {'success':True}
 
+@view_config(route_name='list_models', renderer='json')
+def list_models(request):
+    out = {}
+    for guid,data in models.items():
+        out[gid] = {
+            'predicted_field': data['pfield'],
+            'params': data['params'],
+            'seen': data['seen']
+        }
+    return out
+    
 def du(unix):
     return datetime.utcfromtimestamp(unix)
     
 @view_config(route_name='run', renderer='json', request_method='GET')
 def run(request):
     guid = request.matchdict['guid']
+    models[guid]['seen'] += 1
     print guid,'->', request.GET
     data = {k:float(v) for k,v in request.GET.items()}
     # turn the timestamp field into a datetime obj
@@ -32,6 +44,7 @@ def run(request):
     anomaly_score = result.inferences["anomalyScore"]
     prediction = result.inferences["multiStepBestPredictions"][1]
     likelihood = alh.anomalyProbability(data[pField], anomaly_score, data['timestamp'])
+    
     return {'likelihood':likelihood, 'prediction':prediction, 'anomaly_score':anomaly_score}
 
 @view_config(route_name='create', renderer='json', request_method='GET')
@@ -46,6 +59,8 @@ def create(request):
     model.enableInference({'predictedField': predicted_field})
     models[guid] = {'model':model, 
                     'pfield': predicted_field,
+                    'params': params,
+                    'seen': 0,
                     'alh': anomaly_likelihood.AnomalyLikelihood(200, 200, reestimationPeriod=10)}
     print "Made model", guid
     return {'guid': guid}
