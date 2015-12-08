@@ -1,0 +1,5 @@
+#!/bin/bash
+cd htm-over-http
+set -e
+python setup.py develop
+python runapp.py
