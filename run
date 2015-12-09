@@ -1,5 +1,6 @@
 #!/bin/bash
 cd htm-over-http
 set -e
+export USER=htm-user
 python setup.py develop
 python runapp.py
