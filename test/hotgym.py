@@ -73,7 +73,7 @@ def run_data(model):
                 break
     #check that we can't insert any old data
     print("checking we can't run old data")
-    print(put('models/'+model, {'timestamp': 1, 'kw_energy_consumption': 5}).json())
+    print(put('models/'+model, json.dumps({'timestamp': 1, 'kw_energy_consumption': 5})).json())
     print("Done running")
 
 if __name__ == "__main__":
