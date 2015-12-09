@@ -19,7 +19,7 @@ URL = 'https://morning-meadow-1412.herokuapp.com/'
 
 
 def put(url, params=None):
-    return requests.put(URL+url, params=params)
+    return requests.put(URL+url, data=params)
 
     
 def get(url, params=None):
