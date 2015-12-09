@@ -74,10 +74,13 @@ def run_data(model):
 
 if __name__ == "__main__":
     print(desc)
+    print ("Making model from json")
     custom_model = create_model('model_params.json')
+    print ("Deleting custom model")
     print(delete_model(custom_model))
-    guid = create_model()
-    print("Made model", guid)
+    print("Making default model")
+    guid = create_model('hot_gym_params.json')
+    print("Made default model", guid)
     print(get_model(guid).json())
     print("Running data")
     run_data(guid)

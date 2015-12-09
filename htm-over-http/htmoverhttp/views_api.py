@@ -137,12 +137,15 @@ def model_create(request):
     guid = str(uuid4())
     predicted_field = request.POST.get('predicted_field', None)
     params = json.loads(request.POST.get('model_params', 'false'))
+    msg = ''
     if params:
         if 'predictedField' in params:
             predicted_field = params['predictedField']
         params = params['modelParams']
     else:
-        params = importlib.import_module('model_params.model_params').MODEL_PARAMS
+        params = importlib.import_module('model_params.model_params').MODEL_PARAMS['modelConfig']
+        msg = 'Using default parameters, timestamp is field c0 and input and predictedField is c1'
+        predicted_field = 'c1'
         # no predictedField is given here...
     if not predicted_field:
         request.response.status = 500
@@ -158,4 +161,4 @@ def model_create(request):
                     'last': None,
                     'alh': anomaly_likelihood.AnomalyLikelihood()}
     print "Made model", guid
-    return {'guid': guid, 'params': params, 'predicted_field': predicted_field}
+    return {'guid': guid, 'params': params, 'predicted_field': predicted_field, 'msg': msg}
