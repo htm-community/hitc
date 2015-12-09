@@ -70,7 +70,7 @@ def run(request):
         request.response.status = 404
         return no_model_error()
     print guid, '<-', request.json_body
-    data = {k: float(v) for k, v in request.json_body}
+    data = {k: float(v) for k, v in request.json_body.items()}
     if models[guid]['last'] and (data['timestamp'] < models[guid]['last']['timestamp']):
         request.response.status = 400
         return {'error': 'Cannot run old data'}

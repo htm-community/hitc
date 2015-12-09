@@ -66,7 +66,7 @@ def run_data(model):
         for row in reader:
             row['timestamp'] = int(time.mktime(datetime.strptime(row['timestamp'], DATE_FORMAT).timetuple()))
             print(row)
-            result = post('models/run/'+model, row).json()
+            result = put('models/'+model, json.dumps(row)).json()
             #print(result)
             c += 1
             if c > 10:
