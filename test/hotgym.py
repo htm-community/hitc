@@ -4,6 +4,9 @@ import csv
 from datetime import datetime
 import requests
 import time
+import json
+import sys
+
 DATE_FORMAT = "%m/%d/%y %H:%M"
 desc = """
 Feed the data from rec-center-hourly.csv into the 
@@ -27,8 +30,12 @@ def delete(url):
     return requests.delete(URL+url)
 
 
-def create_model():
-    r = post('models', {'predicted_field': 'kw_energy_consumption'}).json()
+def create_model(model_params=None):
+    opts = {'predicted_field': 'kw_energy_consumption'}
+    if model_params:
+        with open(model_params) as data_file:
+            opts['model_params'] = json.dumps(json.load(data_file))
+    r = post('models', opts).json()
     return r['guid']
 
 
@@ -56,14 +63,19 @@ def run_data(model):
             row['timestamp'] = int(time.mktime(datetime.strptime(row['timestamp'], DATE_FORMAT).timetuple()))
             print(row)
             result = post('models/run/'+model, row).json()
-            print(result)
+            #print(result)
             c += 1
             if c > 10:
                 break
+    #check that we can't insert any old data
+    print("checking we can't run old data")
+    print(post('models/run/'+model, {'timestamp': 1, 'kw_energy_consumption': 5}).json())
     print("Done running")
 
 if __name__ == "__main__":
     print(desc)
+    custom_model = create_model('model_params.json')
+    print(delete_model(custom_model))
     guid = create_model()
     print("Made model", guid)
     print(get_model(guid).json())
