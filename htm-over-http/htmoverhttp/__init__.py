@@ -10,7 +10,6 @@ def main(global_config, **settings):
     config.add_route('model_create', '/models')
     config.add_route('models', '/models/{guid}')
     config.add_route('reset', '/models/reset/{guid}')
-    config.add_route('run', '/models/run/{guid}')
     config.add_route('home', '/')
     config.scan()
     return config.make_wsgi_app()

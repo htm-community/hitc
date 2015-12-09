@@ -62,7 +62,7 @@ def serialize_result(result):
     return out
 
 
-@view_config(route_name='run', renderer='json', request_method='POST')
+@view_config(route_name='models', renderer='json', request_method='PUT')
 def run(request):
     guid = request.matchdict['guid']
     has_model = guid in models

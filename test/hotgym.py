@@ -14,10 +14,14 @@ htm REST API and compare the results with the
 standard results provided in the tutorial
 """
 
-#URL = 'https://morning-meadow-1412.herokuapp.com/'
-URL = 'http://localhost:5000/'
+URL = 'https://morning-meadow-1412.herokuapp.com/'
+#URL = 'http://localhost:5000/'
 
 
+def put(url, params=None):
+    return requests.put(URL+url, params=params)
+
+    
 def get(url, params=None):
     return requests.get(URL+url, params=params)
 
@@ -69,7 +73,7 @@ def run_data(model):
                 break
     #check that we can't insert any old data
     print("checking we can't run old data")
-    print(post('models/run/'+model, {'timestamp': 1, 'kw_energy_consumption': 5}).json())
+    print(put('models/'+model, {'timestamp': 1, 'kw_energy_consumption': 5}).json())
     print("Done running")
 
 if __name__ == "__main__":
