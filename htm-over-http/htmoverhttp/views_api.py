@@ -19,7 +19,7 @@ def reset(request):
 def list_models(request):
     out = {}
     for guid,data in models.items():
-        out[gid] = {
+        out[guid] = {
             'predicted_field': data['pfield'],
             'params': data['params'],
             'seen': data['seen']
@@ -61,6 +61,6 @@ def create(request):
                     'pfield': predicted_field,
                     'params': params,
                     'seen': 0,
-                    'alh': anomaly_likelihood.AnomalyLikelihood(200, 200, reestimationPeriod=10)}
+                    'alh': anomaly_likelihood.AnomalyLikelihood()}
     print "Made model", guid
     return {'guid': guid}
