@@ -34,9 +34,6 @@ def create_model(model_spec):
 def get_model(model):
     return get('models/'+model)
 
-def post(url, params=None):
-    return requests.post(URL+url, data=params)
-
 def run_data(model, fieldname="kw_energy_consumption"):
     with open('rec-center-hourly.csv') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -66,6 +63,6 @@ if __name__ == "__main__":
     with open('model_params.json') as data_file:
         model_spec = data_file.read()
     custom_model = create_model(model_spec)
-    custom_model = create_model(model_spec)
-    # pprint (get_model(custom_model).json())
-    # run_data(custom_model, fieldname="consumption")
+    # custom_model = create_model(model_spec)
+    pprint (get_model(custom_model).json())
+    run_data(custom_model, fieldname="consumption")

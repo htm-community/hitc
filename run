@@ -2,5 +2,5 @@
 cd htm-over-http
 set -e
 export USER=htm-user
-python setup.py develop
+python setup.py develop --user
 python runapp.py
