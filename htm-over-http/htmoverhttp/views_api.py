@@ -4,7 +4,6 @@ import importlib
 import json
 from uuid import uuid4
 from copy import copy
-import urllib
 
 from pyramid.view import view_config
 
@@ -149,7 +148,7 @@ def model_create(request):
 
     if params:
         if 'guid' in params:
-            guid = urllib.quote_plus(params['guid'])
+            guid = params['guid']
             if guid in models.keys():
                 request.response.status = 409
                 return {'error': 'The guid "' + guid + '" is not unique.'}
