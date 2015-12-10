@@ -38,8 +38,9 @@ def no_model_error():
     return {'error': 'No such model'}
 
 
-def serialize_result(result):
-    result.rawInput['timestamp'] = dt_to_unix(result.rawInput['timestamp'])
+def serialize_result(result, temporal_field):
+    if temporal_field is not None:
+        result.rawInput[temporal_field] = dt_to_unix(result.rawInput[temporal_field])
     out = dict(
         predictionNumber=result.predictionNumber,
         rawInput=result.rawInput,
@@ -71,26 +72,29 @@ def run(request):
         return no_model_error()
     print guid, '<-', request.json_body
     data = {k: float(v) for k, v in request.json_body.items()}
-    if models[guid]['last'] and (data['timestamp'] < models[guid]['last']['timestamp']):
+    temporal_field = models[guid]['temporal_field']
+    
+    if (models[guid]['last'] and temporal_field is not None) and (data[temporal_field] < models[guid]['last'][temporal_field]):
         request.response.status = 400
         return {'error': 'Cannot run old data'}
     models[guid]['last'] = copy(data)
     # turn the timestamp field into a datetime obj
-    data['timestamp'] = du(data['timestamp'])
+    # if it exists
+    data[temporal_field] = du(data[temporal_field])
     model = models[guid]['model']
     result = model.run(data)
     alh = models[guid]['alh']
     predicted_field = models[guid]['pfield']
     anomaly_score = result.inferences["anomalyScore"]
     prediction = result.inferences["multiStepBestPredictions"][1]
-    likelihood = alh.anomalyProbability(data[predicted_field], anomaly_score, data['timestamp'])
+    likelihood = alh.anomalyProbability(data[predicted_field], anomaly_score, data[temporal_field])
     models[guid]['seen'] += 1
     return {'likelihood': likelihood,
             'prediction': prediction,
             'anomaly_score': anomaly_score,
-            'last': data,
+            'last': models[guid]['last'],
             'seen': models[guid]['seen'],
-            'model_result': serialize_result(copy(result))
+            'model_result': serialize_result(copy(result), temporal_field)
     }
 
 
