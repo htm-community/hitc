@@ -14,8 +14,8 @@ htm REST API and compare the results with the
 standard results provided in the tutorial
 """
 
-URL = 'https://morning-meadow-1412.herokuapp.com/'
-#URL = 'http://localhost:5000/'
+# URL = 'https://morning-meadow-1412.herokuapp.com/'
+URL = 'http://localhost:5000/'
 
 
 def put(url, params=None):

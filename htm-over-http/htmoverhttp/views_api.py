@@ -40,8 +40,9 @@ def no_model_error():
     return {'error': 'No such model'}
 
 
-def serialize_result(time_fieldname, result):
-    result.rawInput[time_fieldname] = dt_to_unix(result.rawInput[time_fieldname])
+def serialize_result(temporal_field, result):
+    if temporal_field is not None:
+        result.rawInput[temporal_field] = dt_to_unix(result.rawInput[temporal_field])
     out = dict(
         predictionNumber=result.predictionNumber,
         rawInput=result.rawInput,
@@ -66,7 +67,6 @@ def serialize_result(time_fieldname, result):
 
 def find_temporal_field(model_params):
     encoders = model_params['modelParams']['sensorParams']['encoders']
-    tfield = None
     for name, encoder in encoders.iteritems():
         if encoder is not None and encoder['type'] == 'DateEncoder':
             return encoder['fieldname']
@@ -82,18 +82,19 @@ def run(request):
     print guid, '<-', request.json_body
     data = {k: float(v) for k, v in request.json_body.items()}
     model = models[guid]
-    time_fieldname = model['tfield']
-    if model['last'] and (data[time_fieldname] < model['last'][time_fieldname]):
+    temporal_field = model['tfield']
+    if temporal_field is not None and model['last'] and (data[temporal_field] < model['last'][temporal_field]):
         request.response.status = 400
         return {'error': 'Cannot run old data'}
     model['last'] = copy(data)
     # turn the timestamp field into a datetime obj
-    data[time_fieldname] = du(data[time_fieldname])
-    # model = model['model']
+    if temporal_field is not None:
+        data[temporal_field] = du(data[temporal_field])
     resultObject = model['model'].run(data)
     anomaly_score = resultObject.inferences["anomalyScore"]
-    responseObject = serialize_result(time_fieldname, resultObject)
-    responseObject['anomalyLikelihood'] = model['alh'].anomalyProbability(data[model['pfield']], anomaly_score, data[time_fieldname])
+    responseObject = serialize_result(temporal_field, resultObject)
+    if temporal_field is not None:
+        responseObject['anomalyLikelihood'] = model['alh'].anomalyProbability(data[model['pfield']], anomaly_score, data[temporal_field])
     return responseObject
 
 
