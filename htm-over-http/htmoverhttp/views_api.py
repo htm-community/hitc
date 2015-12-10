@@ -1,12 +1,15 @@
-import json
-from pyramid.view import view_config
-from nupic.frameworks.opf.modelfactory import ModelFactory
-from nupic.algorithms import anomaly_likelihood
-from uuid import uuid4
 from datetime import datetime
 import time
 import importlib
+import json
+from uuid import uuid4
 from copy import copy
+import urllib
+
+from pyramid.view import view_config
+
+from nupic.frameworks.opf.modelfactory import ModelFactory
+from nupic.algorithms import anomaly_likelihood
 
 models = {}
 
@@ -147,6 +150,11 @@ def model_create(request):
         params = None
 
     if params:
+        if 'guid' in params:
+            guid = urllib.quote_plus(params['guid'])
+            if guid in models.keys():
+                request.response.status = 409
+                return {'error': 'The guid "' + guid + '" is not unique.'}
         if 'predictedField' not in params or 'modelParams' not in params:
             request.response.status = 500
             return {'error': 'Please provide a predicted_field either as a ' +
