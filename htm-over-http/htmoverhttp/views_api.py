@@ -141,6 +141,11 @@ def model_create(request):
         params = None
 
     if params:
+        if 'guid' in params:
+            guid = params['guid']
+            if guid in models.keys():
+                request.response.status = 409
+                return {'error': 'The guid "' + guid + '" is not unique.'}
         if 'predictedField' not in params or 'modelParams' not in params:
             request.response.status = 500
             return {'error': 'Please provide a predicted_field either as a ' +

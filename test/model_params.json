@@ -1,4 +1,5 @@
 {
+  "guid": "foo",
   "modelParams":{
     "aggregationInfo":{
       "hours":1,
