@@ -172,7 +172,7 @@ def model_create(request):
     temporal_field = None
     for k,v in params['modelParams']['sensorParams']['encoders'].items():
         if v['type'] == "DateEncoder":
-            temp_field = v['fieldname']
+            temporal_field = v['fieldname']
             break
     models[guid] = {'model': model,
                     'pfield': predicted_field,
