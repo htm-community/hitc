@@ -41,8 +41,8 @@ def no_model_error():
     return {'error': 'No such model'}
 
 
-def serialize_result(result):
-    result.rawInput['timestamp'] = dt_to_unix(result.rawInput['timestamp'])
+def serialize_result(time_fieldname, result):
+    result.rawInput[time_fieldname] = dt_to_unix(result.rawInput[time_fieldname])
     out = dict(
         predictionNumber=result.predictionNumber,
         rawInput=result.rawInput,
@@ -65,6 +65,14 @@ def serialize_result(result):
     return out
 
 
+def find_temporal_field(model_params):
+    encoders = model_params['modelParams']['sensorParams']['encoders']
+    tfield = None
+    for name, encoder in encoders.iteritems():
+        if encoder is not None and encoder['type'] == 'DateEncoder':
+            return encoder['fieldname']
+
+
 @view_config(route_name='models', renderer='json', request_method='PUT')
 def run(request):
     guid = request.matchdict['guid']
@@ -74,25 +82,20 @@ def run(request):
         return no_model_error()
     print guid, '<-', request.json_body
     data = {k: float(v) for k, v in request.json_body.items()}
-    if models[guid]['last'] and (data['timestamp'] < models[guid]['last']['timestamp']):
+    model = models[guid]
+    time_fieldname = model['tfield']
+    if model['last'] and (data[time_fieldname] < model['last'][time_fieldname]):
         request.response.status = 400
         return {'error': 'Cannot run old data'}
-    models[guid]['last'] = copy(data)
+    model['last'] = copy(data)
     # turn the timestamp field into a datetime obj
-    data['timestamp'] = du(data['timestamp'])
-    model = models[guid]['model']
-    result = model.run(data)
-    alh = models[guid]['alh']
-    predicted_field = models[guid]['pfield']
-    anomaly_score = result.inferences["anomalyScore"]
-    prediction = result.inferences["multiStepBestPredictions"][1]
-    likelihood = alh.anomalyProbability(data[predicted_field], anomaly_score, data['timestamp'])
-    models[guid]['seen'] += 1
-    return {'likelihood': likelihood,
-            'prediction': prediction,
-            'anomaly_score': anomaly_score,
-            'model_result': serialize_result(copy(result))
-    }
+    data[time_fieldname] = du(data[time_fieldname])
+    # model = model['model']
+    resultObject = model['model'].run(data)
+    anomaly_score = resultObject.inferences["anomalyScore"]
+    responseObject = serialize_result(time_fieldname, resultObject)
+    responseObject['anomalyLikelihood'] = model['alh'].anomalyProbability(data[model['pfield']], anomaly_score, data[time_fieldname])
+    return responseObject
 
 
 @view_config(route_name='models', renderer='json', request_method='DELETE')
@@ -163,13 +166,19 @@ def model_create(request):
         predicted_field = 'c1'
     model = ModelFactory.create(params)
     if predicted_field is not None:
+        print "Enabled predicted field: {0}".format(predicted_field)
         model.enableInference({'predictedField': predicted_field})
-    models[guid] = {'model': model,
-                    'pfield': predicted_field,
-                    'params': params,
-                    'seen': 0,
-                    'last': None,
-                    'alh': anomaly_likelihood.AnomalyLikelihood()}
+    else:
+        print "No predicted field enabled."
+    models[guid] = {
+        'model': model,
+        'pfield': predicted_field,
+        'params': params,
+        'seen': 0,
+        'last': None,
+        'alh': anomaly_likelihood.AnomalyLikelihood(),
+        'tfield': find_temporal_field(params)
+    }
     print "Made model", guid
     return {'guid': guid, 'params': params, 'predicted_field': predicted_field, 'info': msg}
     
