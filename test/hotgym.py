@@ -14,8 +14,8 @@ htm REST API and compare the results with the
 standard results provided in the tutorial
 """
 
-URL = 'https://morning-meadow-1412.herokuapp.com/'
-#URL = 'http://localhost:5000/'
+#URL = 'https://morning-meadow-1412.herokuapp.com/'
+URL = 'http://localhost:5000/'
 
 
 def put(url, params=None):
@@ -35,10 +35,9 @@ def delete(url):
 
 
 def create_model(model_params=None):
-    opts = {'predicted_field': 'kw_energy_consumption'}
     if model_params:
         with open(model_params) as data_file:
-            opts['model_params'] = json.dumps(json.load(data_file))
+            opts = json.dumps(json.load(data_file))
     r = post('models', opts).json()
     return r['guid']
 

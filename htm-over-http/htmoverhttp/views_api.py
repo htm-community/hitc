@@ -88,6 +88,8 @@ def run(request):
     return {'likelihood': likelihood,
             'prediction': prediction,
             'anomaly_score': anomaly_score,
+            'last': data,
+            'seen': models[guid]['seen'],
             'model_result': serialize_result(copy(result))
     }
 
@@ -155,12 +157,22 @@ def model_create(request):
     model = ModelFactory.create(params)
     if predicted_field:
         model.enableInference({'predictedField': predicted_field})
+    temporal_field = None
+    for k,v in params['modelParams']['sensorParams']['encoders'].items():
+        if v['type'] == "DateEncoder":
+            temp_field = v['fieldname']
+            break
     models[guid] = {'model': model,
                     'pfield': predicted_field,
                     'params': params,
                     'seen': 0,
                     'last': None,
+                    'temporal_field': temporal_field,
                     'alh': anomaly_likelihood.AnomalyLikelihood()}
     print "Made model", guid
-    return {'guid': guid, 'params': params, 'predicted_field': predicted_field, 'info': msg}
+    return {'guid': guid,
+            'params': params, 
+            'predicted_field': predicted_field, 
+            'temporal_field': temporal_field, 
+            'info': msg}
     
