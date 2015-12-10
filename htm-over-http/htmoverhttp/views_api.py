@@ -135,22 +135,23 @@ def model_list(request):
 @view_config(route_name='model_create', renderer='json', request_method='POST')
 def model_create(request):
     guid = str(uuid4())
-    predicted_field = request.POST.get('predicted_field', None)
-    params = json.loads(request.POST.get('model_params', 'false'))
-    msg = ''
+    try:
+        params = request.json_body
+    except ValueError:
+        params = None
+
     if params:
-        if 'predictedField' in params:
-            predicted_field = params['predictedField']
+        if 'predictedField' not in params or 'modelParams' not in params:
+            request.response.status = 500
+            return {'error': 'Please provide a predicted_field either as a ' +
+                         'POST param or in the model_params as predictedField'}
+        predicted_field = params['predictedField']
         params = params['modelParams']
+        msg = 'Used provided model parameters'
     else:
         params = importlib.import_module('model_params.model_params').MODEL_PARAMS['modelConfig']
         msg = 'Using default parameters, timestamp is field c0 and input and predictedField is c1'
         predicted_field = 'c1'
-        # no predictedField is given here...
-    if not predicted_field:
-        request.response.status = 500
-        return {'error': 'Please provide a predicted_field either as a ' +
-                         'POST param or in the model_params as predictedField'}
     model = ModelFactory.create(params)
     if predicted_field:
         model.enableInference({'predictedField': predicted_field})
@@ -161,4 +162,5 @@ def model_create(request):
                     'last': None,
                     'alh': anomaly_likelihood.AnomalyLikelihood()}
     print "Made model", guid
-    return {'guid': guid, 'params': params, 'predicted_field': predicted_field, 'msg': msg}
+    return {'guid': guid, 'params': params, 'predicted_field': predicted_field, 'info': msg}
+    
