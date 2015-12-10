@@ -138,6 +138,7 @@ def model_list(request):
 @view_config(route_name='model_create', renderer='json', request_method='POST')
 def model_create(request):
     guid = str(uuid4())
+    predicted_field = None
     try:
         params = request.json_body
     except ValueError:
@@ -149,11 +150,11 @@ def model_create(request):
             if guid in models.keys():
                 request.response.status = 409
                 return {'error': 'The guid "' + guid + '" is not unique.'}
-        if 'predictedField' not in params or 'modelParams' not in params:
-            request.response.status = 500
-            return {'error': 'Please provide a predicted_field either as a ' +
-                         'POST param or in the model_params as predictedField'}
-        predicted_field = params['predictedField']
+        if 'modelParams' not in params:
+            request.response.status = 400
+            return {'error': 'POST body must include JSON with a modelParams value.'}
+        if 'predictedField' in params:
+            predicted_field = params['predictedField']
         params = params['modelParams']
         msg = 'Used provided model parameters'
     else:
@@ -161,7 +162,7 @@ def model_create(request):
         msg = 'Using default parameters, timestamp is field c0 and input and predictedField is c1'
         predicted_field = 'c1'
     model = ModelFactory.create(params)
-    if predicted_field:
+    if predicted_field is not None:
         model.enableInference({'predictedField': predicted_field})
     models[guid] = {'model': model,
                     'pfield': predicted_field,
