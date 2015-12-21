@@ -33,7 +33,7 @@ def du(unix):
 
 
 def dt_to_unix(dt):
-    return int(time.mktime(dt.timetuple()))
+    return int((dt - datetime(1970, 1, 1)).total_seconds())
 
 
 def no_model_error():
@@ -80,22 +80,27 @@ def run(request):
         request.response.status = 404
         return no_model_error()
     print guid, '<-', request.json_body
-    data = {k: float(v) for k, v in request.json_body.items()}
-    model = models[guid]
-    temporal_field = model['tfield']
-    if temporal_field is not None and model['last'] and (data[temporal_field] < model['last'][temporal_field]):
-        request.response.status = 400
-        return {'error': 'Cannot run old data'}
-    model['last'] = copy(data)
-    model['seen'] += 1
-     # turn the timestamp field into a datetime obj
-    if temporal_field is not None:
-        data[temporal_field] = du(data[temporal_field])
-    resultObject = model['model'].run(data)
-    anomaly_score = resultObject.inferences["anomalyScore"]
-    responseObject = serialize_result(temporal_field, resultObject)
-    if temporal_field is not None:
-        responseObject['anomalyLikelihood'] = model['alh'].anomalyProbability(data[model['pfield']], anomaly_score, data[temporal_field])
+    if type(request.json_body) is list:
+        rows = request.json_body
+    else:
+        rows = [request.json_body]
+    for row in rows:
+        data = {k: float(v) for k, v in row.items()}
+        model = models[guid]
+        temporal_field = model['tfield']
+        if temporal_field is not None and model['last'] and (data[temporal_field] < model['last'][temporal_field]):
+            request.response.status = 400
+            return {'error': 'Cannot run old data'}
+        model['last'] = copy(data)
+        model['seen'] += 1
+         # turn the timestamp field into a datetime obj
+        if temporal_field is not None:
+            data[temporal_field] = du(data[temporal_field])
+        resultObject = model['model'].run(data)
+        anomaly_score = resultObject.inferences["anomalyScore"]
+        responseObject = serialize_result(temporal_field, resultObject)
+        if temporal_field is not None:
+            responseObject['anomalyLikelihood'] = model['alh'].anomalyProbability(data[model['pfield']], anomaly_score, data[temporal_field])
     return responseObject
 
 
@@ -128,6 +133,7 @@ def serialize_model(guid):
     return {
         'guid': guid,
         'predicted_field': data['pfield'],
+        'tfield': data['tfield'],
         'params': data['params'],
         'last': data['last'],
         'seen': data['seen']
@@ -181,5 +187,9 @@ def model_create(request):
         'tfield': find_temporal_field(params)
     }
     print "Made model", guid
-    return {'guid': guid, 'params': params, 'predicted_field': predicted_field, 'info': msg}
-    
+    return {'guid': guid,
+            'params': params,
+            'predicted_field': predicted_field,
+            'info': msg,
+            'tfield': models[guid]['tfield']}
+

@@ -15,23 +15,29 @@ if __name__ == "__main__":
     htm = hitcpy.HITC("http://localhost:5000")
     print ("Making default model")
     model = htm.create_model()
-    print "Running data instance 1"
+    print model.params
+    print ("Running data instance 1")
     print model.run({"c0":0,"c1":1})
-    print "Resetting"
+    print ("Resetting")
     print model.reset().json()
-    print "Running data instance 2"
-    print model.run({"c0":0,"c1":2})
+    print ("Running data instance 2")
+    print model.run({"c0": 0, "c1": 2})
+    print ("Running a list of data instances")
+    print model.run([
+        {"c0": 1, "c1": 3},
+        {"c0": 2, "c1": 4},
+        {"c0": 3, "c1": 3},
+        {"c0": 4, "c1": 2}
+    ])
 
-    
     print("Making custom model")
-    with open('consumption_model_params.json','r') as f:
+    with open('consumption_model_params.json', 'r') as f:
         params = json.load(f)
     model2 = htm.create_model(params)
     print model
     print("Running data")
-    model2.run({"consumption":50, "timestamp": 1})
-    
-    
+    model2.run({"consumption": 50, "timestamp": 1})
+
     print("Models are")
     print htm.get_all_models()
     print ("Deleting default model")
