@@ -33,7 +33,7 @@ def du(unix):
 
 
 def dt_to_unix(dt):
-    return int(time.mktime(datetime.now().timetuple()))
+    return int(time.mktime(dt.timetuple()))
 
 
 def no_model_error():
@@ -87,7 +87,8 @@ def run(request):
         request.response.status = 400
         return {'error': 'Cannot run old data'}
     model['last'] = copy(data)
-    # turn the timestamp field into a datetime obj
+    model['seen'] += 1
+     # turn the timestamp field into a datetime obj
     if temporal_field is not None:
         data[temporal_field] = du(data[temporal_field])
     resultObject = model['model'].run(data)
