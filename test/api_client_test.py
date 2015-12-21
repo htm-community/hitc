@@ -1,34 +1,42 @@
 #!/usr/bin/env python
 
 desc = """
-Class to test the api client
-
+Client tester
 """
 
-import hitc
+from hitcpy import hitcpy
+import json
 
 #URL = 'https://morning-meadow-1412.herokuapp.com/'
 URL = 'http://localhost:5000/'
 
 if __name__ == "__main__":
     print(desc)
-    htm = HITC(URL)
+    htm = hitcpy.HITC("http://localhost:5000")
     print ("Making default model")
     model = htm.create_model()
-    model.reset()
-    model.run({})
-    model.delete()
-    
+    print "Running data instance 1"
+    print model.run({"c0":0,"c1":1})
+    print "Resetting"
+    print model.reset().json()
+    print "Running data instance 2"
+    print model.run({"c0":0,"c1":2})
+
     
     print("Making custom model")
-    model = htm.create_model('consumption_model_params.json')
-    print("Made default model", guid)
-    print(get_model(guid).json())
+    with open('consumption_model_params.json','r') as f:
+        params = json.load(f)
+    model2 = htm.create_model(params)
+    print model
     print("Running data")
-    run_data(guid)
+    model2.run({"consumption":50, "timestamp": 1})
+    
+    
     print("Models are")
-    print(get_all_models().json())
-    print("Resetting model")
-    print(reset_model(guid).json())
-    print("Deleting model")
-    print(delete_model(guid).json())
+    print htm.get_all_models()
+    print ("Deleting default model")
+    print model2.delete().json()
+    print ("Deleting custom model")
+    print model.delete().json()
+    print("Models are")
+    print htm.get_all_models()
