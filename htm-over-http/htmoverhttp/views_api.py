@@ -80,6 +80,7 @@ def run(request):
         request.response.status = 404
         return no_model_error()
     print guid, '<-', request.json_body
+    responseList = []
     if type(request.json_body) is list:
         rows = request.json_body
     else:
@@ -93,7 +94,7 @@ def run(request):
             return {'error': 'Cannot run old data'}
         model['last'] = copy(data)
         model['seen'] += 1
-         # turn the timestamp field into a datetime obj
+        # turn the timestamp field into a datetime obj
         if temporal_field is not None:
             data[temporal_field] = du(data[temporal_field])
         resultObject = model['model'].run(data)
@@ -101,7 +102,8 @@ def run(request):
         responseObject = serialize_result(temporal_field, resultObject)
         if temporal_field is not None:
             responseObject['anomalyLikelihood'] = model['alh'].anomalyProbability(data[model['pfield']], anomaly_score, data[temporal_field])
-    return responseObject
+        responseList.append(responseObject)
+    return responseList
 
 
 @view_config(route_name='models', renderer='json', request_method='DELETE')
