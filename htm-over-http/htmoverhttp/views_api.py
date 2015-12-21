@@ -4,7 +4,6 @@ import importlib
 import json
 from uuid import uuid4
 from copy import copy
-import urllib
 
 from pyramid.view import view_config
 
@@ -41,7 +40,7 @@ def no_model_error():
     return {'error': 'No such model'}
 
 
-def serialize_result(result, temporal_field):
+def serialize_result(temporal_field, result):
     if temporal_field is not None:
         result.rawInput[temporal_field] = dt_to_unix(result.rawInput[temporal_field])
     out = dict(
@@ -66,6 +65,13 @@ def serialize_result(result, temporal_field):
     return out
 
 
+def find_temporal_field(model_params):
+    encoders = model_params['modelParams']['sensorParams']['encoders']
+    for name, encoder in encoders.iteritems():
+        if encoder is not None and encoder['type'] == 'DateEncoder':
+            return encoder['fieldname']
+
+
 @view_config(route_name='models', renderer='json', request_method='PUT')
 def run(request):
     guid = request.matchdict['guid']
@@ -75,30 +81,21 @@ def run(request):
         return no_model_error()
     print guid, '<-', request.json_body
     data = {k: float(v) for k, v in request.json_body.items()}
-    temporal_field = models[guid]['temporal_field']
-    
-    if (models[guid]['last'] and temporal_field is not None) and (data[temporal_field] < models[guid]['last'][temporal_field]):
+    model = models[guid]
+    temporal_field = model['tfield']
+    if temporal_field is not None and model['last'] and (data[temporal_field] < model['last'][temporal_field]):
         request.response.status = 400
         return {'error': 'Cannot run old data'}
-    models[guid]['last'] = copy(data)
+    model['last'] = copy(data)
     # turn the timestamp field into a datetime obj
-    # if it exists
-    data[temporal_field] = du(data[temporal_field])
-    model = models[guid]['model']
-    result = model.run(data)
-    alh = models[guid]['alh']
-    predicted_field = models[guid]['pfield']
-    anomaly_score = result.inferences["anomalyScore"]
-    prediction = result.inferences["multiStepBestPredictions"][1]
-    likelihood = alh.anomalyProbability(data[predicted_field], anomaly_score, data[temporal_field])
-    models[guid]['seen'] += 1
-    return {'likelihood': likelihood,
-            'prediction': prediction,
-            'anomaly_score': anomaly_score,
-            'last': models[guid]['last'],
-            'seen': models[guid]['seen'],
-            'model_result': serialize_result(copy(result), temporal_field)
-    }
+    if temporal_field is not None:
+        data[temporal_field] = du(data[temporal_field])
+    resultObject = model['model'].run(data)
+    anomaly_score = resultObject.inferences["anomalyScore"]
+    responseObject = serialize_result(temporal_field, resultObject)
+    if temporal_field is not None:
+        responseObject['anomalyLikelihood'] = model['alh'].anomalyProbability(data[model['pfield']], anomaly_score, data[temporal_field])
+    return responseObject
 
 
 @view_config(route_name='models', renderer='json', request_method='DELETE')
@@ -144,6 +141,7 @@ def model_list(request):
 @view_config(route_name='model_create', renderer='json', request_method='POST')
 def model_create(request):
     guid = str(uuid4())
+    predicted_field = None
     try:
         params = request.json_body
     except ValueError:
@@ -151,15 +149,15 @@ def model_create(request):
 
     if params:
         if 'guid' in params:
-            guid = urllib.quote_plus(params['guid'])
+            guid = params['guid']
             if guid in models.keys():
                 request.response.status = 409
                 return {'error': 'The guid "' + guid + '" is not unique.'}
-        if 'predictedField' not in params or 'modelParams' not in params:
-            request.response.status = 500
-            return {'error': 'Please provide a predicted_field either as a ' +
-                         'POST param or in the model_params as predictedField'}
-        predicted_field = params['predictedField']
+        if 'modelParams' not in params:
+            request.response.status = 400
+            return {'error': 'POST body must include JSON with a modelParams value.'}
+        if 'predictedField' in params:
+            predicted_field = params['predictedField']
         params = params['modelParams']
         msg = 'Used provided model parameters'
     else:
@@ -167,24 +165,20 @@ def model_create(request):
         msg = 'Using default parameters, timestamp is field c0 and input and predictedField is c1'
         predicted_field = 'c1'
     model = ModelFactory.create(params)
-    if predicted_field:
+    if predicted_field is not None:
+        print "Enabled predicted field: {0}".format(predicted_field)
         model.enableInference({'predictedField': predicted_field})
-    temporal_field = None
-    for k,v in params['modelParams']['sensorParams']['encoders'].items():
-        if v['type'] == "DateEncoder":
-            temporal_field = v['fieldname']
-            break
-    models[guid] = {'model': model,
-                    'pfield': predicted_field,
-                    'params': params,
-                    'seen': 0,
-                    'last': None,
-                    'temporal_field': temporal_field,
-                    'alh': anomaly_likelihood.AnomalyLikelihood()}
+    else:
+        print "No predicted field enabled."
+    models[guid] = {
+        'model': model,
+        'pfield': predicted_field,
+        'params': params,
+        'seen': 0,
+        'last': None,
+        'alh': anomaly_likelihood.AnomalyLikelihood(),
+        'tfield': find_temporal_field(params)
+    }
     print "Made model", guid
-    return {'guid': guid,
-            'params': params, 
-            'predicted_field': predicted_field, 
-            'temporal_field': temporal_field, 
-            'info': msg}
+    return {'guid': guid, 'params': params, 'predicted_field': predicted_field, 'info': msg}
     
