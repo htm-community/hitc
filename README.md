@@ -45,17 +45,18 @@ While still in development the REST API is as follows:
 Creates a model, 
 
 ##### Parameters
+Takes a dict of arguments in with the following fields:
 
-* predicted_field: the field to be predicted
-* model_params: the nupic model parameters to be used. If none are provided, default
-parameters are provided based on those from the hot gym anomaly detection.
+* `guid`: an optional name for the model, by default a UUID4 will be generated. The guid must be unique.
+* `predictedField`: the field to be predicted
+* `modelParams`: the nupic model parameters to be used. If none are provided, [default
+parameters](https://github.com/nupic-community/hitc/blob/master/htm-over-http/model_params/model_params.py) are provided based on those from the hot gym anomaly detection.
 
 ##### Returns
 
 A JSON object containing the GUID of the model and parameters used.
 
 ### GET 
- 
  
 Gets a list of all models and their associated information.
 
@@ -68,6 +69,7 @@ A JSON list of JSON objects containing:
 * The predicted field
 * The number of input records processed
 * The last input record processed
+* The temporal field if it exists
 
 /models/{guid}
 -----------
@@ -77,8 +79,7 @@ If the GUID is not found, a 404 error will be returned
 
 ##### Returns
 
-Details of the model
-
+Details of the model (same format as `GET /models`)
 
 ### DELETE
 
@@ -92,18 +93,13 @@ Deletes the model
  * success: true if model was deleted, false otherwise
  * guid: the guid of the model to deleted
 
-/models/run/{guid}
------------------
-Run data through a model
+### PUT
 
-### POST
-Run a single record through the model
+Run data through a model
 
 ##### Parameters
 
-All parameters must match those given as the inputs in the parameters
-
-Timestamp must be an integer or float that is a unix timestamp.
+Takes a list of objects or a single object. If using a datetime field, then they must be pushed in chronological order. Each input object must have those fields given in the parameters. Timestamp must be an integer or float that is a unix timestamp.
 
 ##### Returns
 
