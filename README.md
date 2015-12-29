@@ -37,7 +37,7 @@ and there is no model associated with it, a 404 error will be returned.
 
 While still in development the REST API is as follows:
 
-models
+/models
 ------
 
 ### POST
@@ -69,7 +69,7 @@ A JSON list of JSON objects containing:
 * The number of input records processed
 * The last input record processed
 
-models/{guid}
+/models/{guid}
 -----------
 If the GUID is not found, a 404 error will be returned
 
@@ -92,7 +92,7 @@ Deletes the model
  * success: true if model was deleted, false otherwise
  * guid: the guid of the model to deleted
 
-models/run/{guid}
+/models/run/{guid}
 -----------------
 Run data through a model
 
@@ -113,6 +113,6 @@ Returns the output of the nupic model:
 * prediction
 * likelihood
 
-models/reset/{guid}
+/models/reset/{guid}
 -----------------
 Resets a model
