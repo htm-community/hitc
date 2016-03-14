@@ -1,8 +1,7 @@
-# htm-over-http
-temporary name until we decide some things
+# HTM In The Cloud (HITC)
 
 Chat with us on Gitter:
-[![Gitter](https://img.shields.io/badge/gitter-join_chat-blue.svg)](https://gitter.im/nupic-community/htm-over-http?utm_source=badge)
+[![Gitter](https://img.shields.io/badge/gitter-join_chat-blue.svg)](https://gitter.im/nupic-community/hitc?utm_source=badge)
 
 About
 =====
